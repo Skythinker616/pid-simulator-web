@@ -4,15 +4,41 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="initial-scale=1, maximum-scale=3, minimum-scale=1, user-scalable=no">
 	<style>
+		@keyframes status-float-down-anim{  
+			0% {transform: translateY(0);}
+			100% {transform: translateY(80%);}
+		}
+		@keyframes status-float-up-anim{  
+			0% {transform: translateY(80%);}
+			100% {transform: translateY(0);}
+		}
 		p{
 			margin: 0px;
 		}
 		td{
 			white-space: normal;
 		}
-		canvas{
-			max-width: 100%;
-			max-height: 100%;
+		#status-float-div{
+			position: fixed;
+			display: flex;
+			flex-direction: row;
+			bottom: 0px;
+			left: 0px;
+			max-height: 200px;
+			width: 100%;
+			background-color: lightgray;
+			opacity: 0.8;
+			border-radius: 10px;
+		}
+		#scope-canvas{
+			width: 100%;
+			border: 2px solid #7DA3A8;
+			margin: 20px;
+			flex-grow: 1;
+		}
+		#render-canvas{
+			width: 100%;
+			height: 100%;
 		}
 		#head-div{
 			display: flex;
@@ -69,6 +95,13 @@
 			white-space: nowrap;
 			margin: 5px 0px;
 		}
+		.status-label{
+			font-family: Georgia, serif;
+			font-size: small;
+			text-align: center;
+			white-space: nowrap;
+			margin: 0px 5px;
+		}
 		input[type="radio"]{
 			height: 0;
 			width: 0;
@@ -82,7 +115,7 @@
 			color: #7DA3A8;
 		}
 	</style>
-	<script src="scripts/matter.js"></script>
+	<script src="scripts/matter.min.js"></script>
 	<script src="scripts/pid.js"></script>
 </head>
 <body>
@@ -206,6 +239,20 @@
 		</table>
 	</div>
 </div>
+<canvas id="render-canvas"></canvas>
+<div id="status-float-div" onclick="onStatusFloatClick(event)">
+	<table style="align-self: center;">
+		<tr><td><p class="status-label">目标位置</p></td></tr>
+		<tr><td><p id="status-target-pos" class="status-label" style="color: green;">000.00</p></td></tr>
+		<tr><td><p class="status-label">--------</p></td></tr>
+		<tr><td><p class="status-label">当前位置</p></td></tr>
+		<tr><td><p id="status-ball-pos" class="status-label" style="color: red;">000.00</p></td></tr>
+		<tr><td><p class="status-label">--------</p></td></tr>
+		<tr><td><p class="status-label">PID输出</p></td></tr>
+		<tr><td><p id="status-pid-out" class="status-label">000.00</p></td></tr>
+	</table>
+	<canvas id="scope-canvas"></canvas>
+</div>
 <script type="text/javascript">
 	function onRangeInput(event){
 		var valueElement=document.getElementById(event.srcElement.id.replace("range","number"));
@@ -226,14 +273,56 @@
 	}
 </script>
 <script type="text/javascript">
+	var scope=document.getElementById("scope-canvas");
+	setInterval(function(){
+		var scopectx=scope.getContext("2d");
+		scopectx.clearRect(0,0,scope.width,scope.height);
+		scopectx.lineWidth=1;
+		for(var i=0;i<histSamples.length-1;i++){
+			scopectx.strokeStyle="green";
+			scopectx.beginPath();
+			scopectx.moveTo(scope.width*i/histQueueLength,scope.height/2-(histSamples[i].target-scrWidth/2)*scope.height/scrWidth);
+			scopectx.lineTo(scope.width*(i+1)/histQueueLength,scope.height/2-(histSamples[i+1].target-scrWidth/2)*scope.height/scrWidth);
+			scopectx.closePath();
+			scopectx.stroke();
+
+			scopectx.strokeStyle="red";
+			scopectx.beginPath();
+			scopectx.moveTo(scope.width*i/histQueueLength,scope.height/2-(histSamples[i].ball-scrWidth/2)*scope.height/scrWidth);
+			scopectx.lineTo(scope.width*(i+1)/histQueueLength,scope.height/2-(histSamples[i+1].ball-scrWidth/2)*scope.height/scrWidth);
+			scopectx.closePath();
+			scopectx.stroke();
+		}
+		document.getElementById("status-target-pos").innerText=targetPos.toFixed(2);
+		document.getElementById("status-ball-pos").innerText=ball.position.x.toFixed(2);
+		document.getElementById("status-pid-out").innerText=pidForce.x.toFixed(2);
+	},30);
+	var floatDivExpanded=true;
+	function onStatusFloatClick(event){
+		var floatDiv=document.getElementById("status-float-div");
+		if(floatDivExpanded){
+			floatDiv.style.animation="1s status-float-down-anim";
+			floatDiv.style.transform="translateY(80%)";
+			floatDivExpanded=false;
+		}else{
+			floatDiv.style.animation="1s status-float-up-anim";
+			floatDiv.style.transform="translateY(0)";
+			floatDivExpanded=true;
+		}
+	}
+</script>
+<script type="text/javascript">
 	const ballRadius=20,wallDepth=100;
-	var scrWidth=window.innerWidth,scrHeight=window.innerHeight-document.getElementById("head-div").clientHeight;
+	var scrWidth=window.innerWidth;
+	var scrHeight=window.innerHeight-document.getElementById("head-div").clientHeight;
 	var targetPos=scrWidth/2;
 	var pidForce={x:0,y:0};
 	var singlePID=new PID(0,0,0,0,0);
 	var cascadePID=new CascadePID([0,0,0,0,0],[0,0,0,0,0]);
 	var staticForce={x:0,y:0};
 	var isSinglePID=true;
+	const histQueueLength=200;
+	var histSamples=new Array();
 
 	var Engine=Matter.Engine;
 	var Render=Matter.Render;
@@ -248,10 +337,10 @@
 		gravity:{x:0,y:0}
 	});
 	var render=Render.create({
-		element:document.body,
+		canvas:document.getElementById("render-canvas"),
 		engine:engine,
 		options:{
-			showVelocity:true,
+			showVelocity:false,
 			width:scrWidth,
 			height:scrHeight,
 			background:"#F4F3DF",
@@ -339,6 +428,9 @@
 			cascadePID.calc(targetPos,ball.position.x,ball.velocity.x);
 			pidForce.x=cascadePID.output;
 		}
+		histSamples.push({target:targetPos,ball:ball.position.x});
+		if(histSamples.length>histQueueLength)
+			histSamples.shift();
 	},20);
 
 </script>
