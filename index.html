@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="initial-scale=1, maximum-scale=3, minimum-scale=1, user-scalable=no">
+	<style>
+		p{
+			margin: 0px;
+		}
+		td{
+			white-space: normal;
+		}
+		canvas{
+			max-width: 100%;
+			max-height: 100%;
+		}
+		#head-div{
+			display: flex;
+			flex-direction: row;
+			overflow-y: auto;
+			border-bottom: solid 2px lightgray;
+		}
+		.hori-flex-div{
+			display: flex;
+			flex-direction: row;
+		}
+		.vert-line-div{
+			width: 0px;
+			border-left: solid 2px #7DA3A8;
+			margin: 10px 10px;
+		}
+		.table-title{
+			font-family: Georgia, serif;
+			font-weight: bold;
+			font-size: small;
+			white-space: nowrap;
+			margin: 5px 0px;
+		}
+		body{
+			background-color: #F4F3DF;
+		}
+		input[type="number"]{
+			background-color: transparent;
+			border-left: 0px;
+			border-right: 0px;
+			border-top: 0px;
+			border-bottom: 2px solid #7DA3A8;
+			text-align: center;
+			max-width: 40px;
+		}
+		input[type="range"]{
+			-webkit-appearance: none;
+			height: 12px;
+			border-radius: 6px;
+			background-color: lightgrey;
+		}
+		input[type="range"]::-webkit-slider-thumb{
+			-webkit-appearance: none;
+			height: 12px;
+			width: 12px;
+			border-radius: 6px;
+			background-color: #7DA3A8;
+		}
+		.param-label{
+			font-family: Georgia, serif;
+			font-weight: bold;
+			font-size: small;
+			text-align: right;
+			white-space: nowrap;
+			margin: 5px 0px;
+		}
+		input[type="radio"]{
+			height: 0;
+			width: 0;
+		}
+		input[type="radio"]+label{
+			font-family: Georgia, serif;
+			font-size: small;
+		}
+		input[type="radio"]:checked+label{
+			font-weight: bold;
+			color: #7DA3A8;
+		}
+	</style>
+	<script src="scripts/matter.js"></script>
+	<script src="scripts/pid.js"></script>
+</head>
+<body>
+<div id="head-div">
+	<div>
+		<table>
+			<th colspan="3" class="table-title">全局设置</th>
+			<tr>
+				<td><p class="param-label">鼠标操作</p></td>
+				<td>
+					<div class="hori-flex-div">
+						<input id="select-ctrl-ball" name="mouse-ctrl" type="radio" checked><label for="select-ctrl-ball">推动小球</label>
+						<input id="select-ctrl-target" name="mouse-ctrl" type="radio"><label for="select-ctrl-target">修改目标</label>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td><p class="param-label">PID类型</p></td>
+				<td>
+					<div class="hori-flex-div">
+						<input id="select-pid-single" name="pid-type" type="radio" checked onclick="onPIDTypeChange(true);"><label for="select-pid-single">单级PID</label>
+						<input id="select-pid-cascade" name="pid-type" type="radio" onclick="onPIDTypeChange(false);"><label for="select-pid-cascade">串级PID</label>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td><p class="param-label">干扰恒力</p></td>
+				<td><input id="static-force-range" class="input-range" type="range" min="-10" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="static-force-number" class="input-range-value" type="number" value="0" onchange="staticForce.x=parseFloat(this.value)"></td>
+			</tr>
+		</table>
+	</div>
+	<div class="vert-line-div"></div>
+	<div id="single-param-div">
+		<table>
+			<th colspan="3" class="table-title">单级PID参数</th>
+			<tr>
+				<td><p class="param-label">KP</p></td>
+				<td><input id="single-kp-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="single-kp-number" class="input-range-value" type="number" value="0" onchange="singlePID.kp=parseFloat(this.value)"></td>
+			</tr>
+			<tr>
+				<td><p class="param-label">KI</p></td>
+				<td><input id="single-ki-range" class="input-range" type="range" min="0" max="1" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="single-ki-number" class="input-range-value" type="number" value="0" onchange="singlePID.ki=parseFloat(this.value)"></td>
+			</tr>
+			<tr>
+				<td><p class="param-label">KD</p></td>
+				<td><input id="single-kd-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="single-kd-number" class="input-range-value" type="number" value="0" onchange="singlePID.kd=parseFloat(this.value)"></td>
+			</tr>
+			<tr>
+				<td><p class="param-label">积分限幅</p></td>
+				<td><input id="single-mi-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="single-mi-number" class="input-range-value" type="number" value="0" onchange="singlePID.maxInt=parseFloat(this.value)"></td>
+			</tr>
+			<tr>
+				<td><p class="param-label">输出限幅</p></td>
+				<td><input id="single-mo-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="single-mo-number" class="input-range-value" type="number" value="0" onchange="singlePID.maxOut=parseFloat(this.value)"></td>
+			</tr>
+		</table>
+	</div>
+	<div id="cascade-param-div" class="hori-flex-div" style="display: none;">
+		<table>
+			<th colspan="3" class="table-title">串级内环（速度环）参数</th>
+			<tr>
+				<td><p class="param-label">KP</p></td>
+				<td><input id="inner-kp-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="inner-kp-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.kp=parseFloat(this.value)"></td>
+			</tr>
+			<tr>
+				<td><p class="param-label">KI</p></td>
+				<td><input id="inner-ki-range" class="input-range" type="range" min="0" max="1" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="inner-ki-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.ki=parseFloat(this.value)"></td>
+			</tr>
+			<tr>
+				<td><p class="param-label">KD</p></td>
+				<td><input id="inner-kd-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="inner-kd-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.kd=parseFloat(this.value)"></td>
+			</tr>
+			<tr>
+				<td><p class="param-label">积分限幅</p></td>
+				<td><input id="inner-mi-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="inner-mi-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.maxInt=parseFloat(this.value)"></td>
+			</tr>
+			<tr>
+				<td><p class="param-label">输出限幅</p></td>
+				<td><input id="inner-mo-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="inner-mo-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.maxOut=parseFloat(this.value)"></td>
+			</tr>
+		</table>
+		<div class="vert-line-div"></div>
+		<table>
+			<th colspan="3" class="table-title">串级外环（位置环）参数</th>
+			<tr>
+				<td><p class="param-label">KP</p></td>
+				<td><input id="outer-kp-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="outer-kp-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.kp=parseFloat(this.value)"></td>
+			</tr>
+			<tr>
+				<td><p class="param-label">KI</p></td>
+				<td><input id="outer-ki-range" class="input-range" type="range" min="0" max="1" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="outer-ki-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.ki=parseFloat(this.value)"></td>
+			</tr>
+			<tr>
+				<td><p class="param-label">KD</p></td>
+				<td><input id="outer-kd-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="outer-kd-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.kd=parseFloat(this.value)"></td>
+			</tr>
+			<tr>
+				<td><p class="param-label">积分限幅</p></td>
+				<td><input id="outer-mi-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="outer-mi-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.maxInt=parseFloat(this.value)"></td>
+			</tr>
+			<tr>
+				<td><p class="param-label">输出限幅</p></td>
+				<td><input id="outer-mo-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+				<td><input id="outer-mo-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.maxOut=parseFloat(this.value)"></td>
+			</tr>
+		</table>
+	</div>
+</div>
+<script type="text/javascript">
+	function onRangeInput(event){
+		var valueElement=document.getElementById(event.srcElement.id.replace("range","number"));
+		valueElement.value=event.srcElement.value;
+		valueElement.onchange();
+	}
+	function onPIDTypeChange(isSingle){
+		isSinglePID=isSingle;
+		if(isSingle){
+			document.getElementById("single-param-div").style.display="flex";
+			document.getElementById("cascade-param-div").style.display="none";
+			cascadePID.clear();
+		}else{
+			document.getElementById("single-param-div").style.display="none";
+			document.getElementById("cascade-param-div").style.display="flex";
+			singlePID.clear();
+		}
+	}
+</script>
+<script type="text/javascript">
+	const ballRadius=20,wallDepth=100;
+	var scrWidth=window.innerWidth,scrHeight=window.innerHeight-document.getElementById("head-div").clientHeight;
+	var targetPos=scrWidth/2;
+	var pidForce={x:0,y:0};
+	var singlePID=new PID(0,0,0,0,0);
+	var cascadePID=new CascadePID([0,0,0,0,0],[0,0,0,0,0]);
+	var staticForce={x:0,y:0};
+	var isSinglePID=true;
+
+	var Engine=Matter.Engine;
+	var Render=Matter.Render;
+	var World=Matter.World;
+	var Bodies=Matter.Bodies;
+	var Body=Matter.Body;
+	var MouseConstraint=Matter.MouseConstraint;
+	var Mouse=Matter.Mouse;
+	var Events=Matter.Events;
+
+	var engine=Engine.create({
+		gravity:{x:0,y:0}
+	});
+	var render=Render.create({
+		element:document.body,
+		engine:engine,
+		options:{
+			showVelocity:true,
+			width:scrWidth,
+			height:scrHeight,
+			background:"#F4F3DF",
+			wireframes:false
+		}
+	});
+
+	var mouse=Mouse.create(render.canvas);
+	var mouseConstraint=MouseConstraint.create(engine,{
+		mouse:mouse,
+		constraint:{
+			stiffness:0.01,
+			render:{visible: false}
+		},
+		collisionFilter:{group:-1}
+	});
+	World.add(engine.world,mouseConstraint)
+
+	var ball=Bodies.circle(scrWidth/2,scrHeight/2,ballRadius,{
+		friction:0,
+		frictionAir:0,
+		restitution:0,
+		mass:1000,
+		render:{fillStyle:"#F5594A"},
+		collisionFilter:{group:-1}
+	});
+	World.add(engine.world,ball);
+
+	Engine.run(engine);
+	Render.run(render);
+
+	var ctx=render.context;
+	ctx.font="25px 'Microsoft YaHei'";
+
+	function ctxDrawLine(x1,y1,x2,y2,width,color,dash){
+		if(dash)
+			ctx.setLineDash([5,5]);
+		else
+			ctx.setLineDash([5,0]);
+		ctx.lineWidth=width;
+		ctx.strokeStyle=color;
+		ctx.beginPath();
+		ctx.moveTo(x1,y1);
+		ctx.lineTo(x2,y2);
+		ctx.closePath();
+		ctx.stroke();
+	}
+	Events.on(render,"afterRender",function(event){
+		ctxDrawLine(0,scrHeight/2,scrWidth,scrHeight/2,1,"gray",true);
+		ctxDrawLine(ball.position.x,scrHeight/2,ball.position.x+pidForce.x*3,scrHeight/2,5,"#388AF5",false);
+		ctxDrawLine(targetPos,scrHeight/2-ballRadius/2,targetPos,scrHeight/2+ballRadius/2,3,"#00E06D",false);
+	});
+
+	Events.on(engine,"beforeUpdate",function(event){
+		Body.applyForce(ball,{x:0,y:0},staticForce);
+		Body.applyForce(ball,{x:0,y:0},pidForce);
+	});
+
+	var lastMouseMovePosX=0,mouseDownPosX=0,isDown=false;
+	Events.on(mouseConstraint,"mousedown",function(event){
+		isDown=true;
+		mouseDownPosX=event.mouse.position.x;
+		lastMouseMovePosX=event.mouse.position.x;
+	});
+	Events.on(mouseConstraint,"mousemove",function(event){
+		if(isDown){
+			var nowPosX=event.mouse.position.x;
+			var speed=nowPosX-lastMouseMovePosX;
+			if(document.getElementById("select-ctrl-ball").checked)
+				ball.position.x+=speed*0.02;
+			else
+				targetPos+=speed;
+			lastMouseMovePosX=nowPosX;
+		}
+	});
+	Events.on(mouseConstraint,"mouseup",function(event){
+		isDown=false;
+	});
+
+	setInterval(function(event){
+		if(isSinglePID){
+			singlePID.calc(targetPos,ball.position.x);
+			pidForce.x=singlePID.output;
+		}else{
+			cascadePID.calc(targetPos,ball.position.x,ball.velocity.x);
+			pidForce.x=cascadePID.output;
+		}
+	},20);
+
+</script>
+</body>
+</html>
