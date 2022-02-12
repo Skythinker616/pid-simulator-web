@@ -13,14 +13,33 @@
 			0% {transform: translateY(80%);}
 			100% {transform: translateY(0);}
 		}
+		/* 教程窗口移动动画 */
+		@keyframes teach-float-right-anim{  
+			0% {transform: translateX(-100%);}
+			100% {transform: translateX(0);}
+		}
+		@keyframes teach-float-left-anim{  
+			0% {transform: translateX(0);}
+			100% {transform: translateX(-100%);}
+		}
+		/* 教程文字淡入动画 */
+		@keyframes teach-info-enter-anim{  
+			0% {opacity: 0;}
+			100% {opacity: 0.8;}
+		}
 	</style>
 	<style>
 		/* 取消所有段落外边界 */
 		p{margin: 0px;}
 		/* 禁用所有表格中的换行 */
 		td{white-space: normal;}
-		/* 设置全屏背景颜色 */
-		body{background-color: #F4F3DF;}
+		/* 设置全屏背景 */
+		body{
+			background-color: #F4F3DF;
+			margin: 0;
+			overflow-x: hidden;
+			overflow-y: hidden;
+		}
 		/* 数字编辑框样式 */
 		input[type="number"]{
 			background-color: transparent;
@@ -61,10 +80,31 @@
 			font-weight: bold;
 			color: #7DA3A8;
 		}
+		/* 按钮样式 */
+		button{
+			background-color: #F4F3DF;
+			border: 2px solid #7DA3A8;
+			border-radius: 5px;
+			font-family: Georgia, serif;
+			font-weight: bold;
+			color: #7DA3A8;
+			margin: 2px;
+			white-space: nowrap;
+		}
+		/* 按钮被点击时的样式 */
+		button:active{
+			background-color: #7DA3A8;
+			color: white;
+		}
 		/* 横向分布div */
 		.hori-flex-div{
 			display: flex;
 			flex-direction: row;
+		}
+		/* 纵向分布div */
+		.vert-flex-div{
+			display: flex;
+			flex-direction: column;
 		}
 		/* 竖向分界线div */
 		.vert-line-div{
@@ -123,354 +163,448 @@
 			width: 100%;
 			height: 100%;
 		}
-		/* 头部配置窗口样式 */
-		#head-div{
+		/* 顶部区域样式 */
+		#top-div{
+			display: flex;
+			flex-direction:	column;
+			position: relative;
+		}
+		/* 配置区域样式 */
+		#settings-div{
 			display: flex;
 			flex-direction: row;
 			overflow-y: auto;
 			border-bottom: solid 2px lightgray;
 		}
+		/* 教程区域样式 */
+		#teach-div{
+			position: absolute;
+			display: flex;
+			flex-direction: row;
+			background-color: lightgray;
+			opacity: 0.8;
+			top: 100%;
+			left: 0px;
+			width: 95%;
+			max-width: 800px;
+			padding: 10px;
+			border-top-right-radius: 15px;
+			border-bottom-right-radius: 15px;
+			align-items: center;
+			transform: translateX(-100%);
+		}
+		/* 教程页码文字样式 */
+		#teach-step-ratio{
+			font-size: x-small;
+			color: #7DA3A8;
+			font-weight: bold;
+			text-align: center;
+		}
+		/* 教程文字区域样式 */
+		#teach-info-div{
+			overflow-y: auto;
+		}
+		/* 教程文字样式 */
+		#teach-info{
+			font-size: medium;
+			margin: 5px;
+		}
 	</style>
 	<script src="scripts/matter.min.js"></script>
-	<script src="scripts/pid.js"></script>
+	<script src="scripts/pid.js?v=1"></script>
+	<script src="scripts/teach-info.js?v=2"></script>
 </head>
 <body>
-<div id="head-div">
-	<div>
-		<table>
-			<th colspan="3" class="table-title">全局设置</th>
-			<tr>
-				<td><p class="param-label">鼠标操作</p></td>
-				<td>
-					<div class="hori-flex-div">
-						<input id="select-ctrl-ball" name="mouse-ctrl" type="radio" checked><label for="select-ctrl-ball">推动小球</label>
-						<input id="select-ctrl-target" name="mouse-ctrl" type="radio"><label for="select-ctrl-target">修改目标</label>
-					</div>
-				</td>
-			</tr>
-			<tr>
-				<td><p class="param-label">PID类型</p></td>
-				<td>
-					<div class="hori-flex-div">
-						<input id="select-pid-single" name="pid-type" type="radio" checked onclick="onPIDTypeChange(true);"><label for="select-pid-single">单级PID</label>
-						<input id="select-pid-cascade" name="pid-type" type="radio" onclick="onPIDTypeChange(false);"><label for="select-pid-cascade">串级PID</label>
-					</div>
-				</td>
-			</tr>
-			<tr>
-				<td><p class="param-label">干扰恒力</p></td>
-				<td><input id="static-force-range" class="input-range" type="range" min="-10" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="static-force-number" class="input-range-value" type="number" value="0" onchange="staticForce.x=parseFloat(this.value)"></td>
-			</tr>
-		</table>
+	<div id="top-div">
+		<div id="settings-div">
+			<div>
+				<table>
+					<th colspan="3" class="table-title">全局设置</th>
+					<tr>
+						<td><p class="param-label">鼠标操作</p></td>
+						<td>
+							<div class="hori-flex-div">
+								<input id="select-ctrl-ball" name="mouse-ctrl" type="radio" checked><label for="select-ctrl-ball">推动小球</label>
+								<input id="select-ctrl-target" name="mouse-ctrl" type="radio"><label for="select-ctrl-target">修改目标</label>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td><p class="param-label">PID类型</p></td>
+						<td>
+							<div class="hori-flex-div">
+								<input id="select-pid-single" name="pid-type" type="radio" checked onclick="onPIDTypeChange(true);"><label for="select-pid-single">单级PID</label>
+								<input id="select-pid-cascade" name="pid-type" type="radio" onclick="onPIDTypeChange(false);"><label for="select-pid-cascade">串级PID</label>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td><p class="param-label">教程模式</p></td>
+						<td>
+							<div class="hori-flex-div">
+								<input id="select-teach-on" name="teach-switch" type="radio" onclick="onTeachSwitch(true);"><label for="select-teach-on">开</label>
+								<input id="select-teach-off" name="teach-switch" type="radio" checked onclick="onTeachSwitch(false);"><label for="select-teach-off">关</label>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td><p class="param-label">干扰恒力</p></td>
+						<td><input id="static-force-range" class="input-range" type="range" min="-10" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="static-force-number" class="input-range-value" type="number" value="0" onchange="staticForce.x=parseFloat(this.value)"></td>
+					</tr>
+				</table>
+			</div>
+			<div class="vert-line-div"></div>
+			<div id="single-param-div">
+				<table>
+					<th colspan="3" class="table-title">单级PID参数</th>
+					<tr>
+						<td><p class="param-label">KP</p></td>
+						<td><input id="single-kp-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="single-kp-number" class="input-range-value" type="number" value="0" onchange="singlePID.kp=parseFloat(this.value)"></td>
+					</tr>
+					<tr>
+						<td><p class="param-label">KI</p></td>
+						<td><input id="single-ki-range" class="input-range" type="range" min="0" max="1" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="single-ki-number" class="input-range-value" type="number" value="0" onchange="singlePID.ki=parseFloat(this.value)"></td>
+					</tr>
+					<tr>
+						<td><p class="param-label">KD</p></td>
+						<td><input id="single-kd-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="single-kd-number" class="input-range-value" type="number" value="0" onchange="singlePID.kd=parseFloat(this.value)"></td>
+					</tr>
+					<tr>
+						<td><p class="param-label">积分限幅</p></td>
+						<td><input id="single-mi-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="single-mi-number" class="input-range-value" type="number" value="0" onchange="singlePID.maxInt=parseFloat(this.value)"></td>
+					</tr>
+					<tr>
+						<td><p class="param-label">输出限幅</p></td>
+						<td><input id="single-mo-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="single-mo-number" class="input-range-value" type="number" value="0" onchange="singlePID.maxOut=parseFloat(this.value)"></td>
+					</tr>
+				</table>
+			</div>
+			<div id="cascade-param-div" class="hori-flex-div" style="display: none;">
+				<table>
+					<th colspan="3" class="table-title">串级内环（速度环）参数</th>
+					<tr>
+						<td><p class="param-label">KP</p></td>
+						<td><input id="inner-kp-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="inner-kp-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.kp=parseFloat(this.value)"></td>
+					</tr>
+					<tr>
+						<td><p class="param-label">KI</p></td>
+						<td><input id="inner-ki-range" class="input-range" type="range" min="0" max="1" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="inner-ki-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.ki=parseFloat(this.value)"></td>
+					</tr>
+					<tr>
+						<td><p class="param-label">KD</p></td>
+						<td><input id="inner-kd-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="inner-kd-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.kd=parseFloat(this.value)"></td>
+					</tr>
+					<tr>
+						<td><p class="param-label">积分限幅</p></td>
+						<td><input id="inner-mi-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="inner-mi-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.maxInt=parseFloat(this.value)"></td>
+					</tr>
+					<tr>
+						<td><p class="param-label">输出限幅</p></td>
+						<td><input id="inner-mo-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="inner-mo-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.maxOut=parseFloat(this.value)"></td>
+					</tr>
+				</table>
+				<div class="vert-line-div"></div>
+				<table>
+					<th colspan="3" class="table-title">串级外环（位置环）参数</th>
+					<tr>
+						<td><p class="param-label">KP</p></td>
+						<td><input id="outer-kp-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="outer-kp-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.kp=parseFloat(this.value)"></td>
+					</tr>
+					<tr>
+						<td><p class="param-label">KI</p></td>
+						<td><input id="outer-ki-range" class="input-range" type="range" min="0" max="1" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="outer-ki-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.ki=parseFloat(this.value)"></td>
+					</tr>
+					<tr>
+						<td><p class="param-label">KD</p></td>
+						<td><input id="outer-kd-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="outer-kd-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.kd=parseFloat(this.value)"></td>
+					</tr>
+					<tr>
+						<td><p class="param-label">积分限幅</p></td>
+						<td><input id="outer-mi-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="outer-mi-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.maxInt=parseFloat(this.value)"></td>
+					</tr>
+					<tr>
+						<td><p class="param-label">输出限幅</p></td>
+						<td><input id="outer-mo-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="outer-mo-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.maxOut=parseFloat(this.value)"></td>
+					</tr>
+				</table>
+			</div>
+		</div>
+		<div id="teach-div">
+			<div class="vert-flex-div">
+				<button id="teach-prev-btn" onclick="onTeachStep(false);">上一步</button>
+				<button id="teach-next-btn" onclick="onTeachStep(true);">下一步</button>
+				<p id="teach-step-ratio">0/0</p>
+			</div>
+			<div id="teach-info-div">
+				<p id="teach-info"></p>
+			</div>
+		</div>
 	</div>
-	<div class="vert-line-div"></div>
-	<div id="single-param-div">
-		<table>
-			<th colspan="3" class="table-title">单级PID参数</th>
-			<tr>
-				<td><p class="param-label">KP</p></td>
-				<td><input id="single-kp-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="single-kp-number" class="input-range-value" type="number" value="0" onchange="singlePID.kp=parseFloat(this.value)"></td>
-			</tr>
-			<tr>
-				<td><p class="param-label">KI</p></td>
-				<td><input id="single-ki-range" class="input-range" type="range" min="0" max="1" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="single-ki-number" class="input-range-value" type="number" value="0" onchange="singlePID.ki=parseFloat(this.value)"></td>
-			</tr>
-			<tr>
-				<td><p class="param-label">KD</p></td>
-				<td><input id="single-kd-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="single-kd-number" class="input-range-value" type="number" value="0" onchange="singlePID.kd=parseFloat(this.value)"></td>
-			</tr>
-			<tr>
-				<td><p class="param-label">积分限幅</p></td>
-				<td><input id="single-mi-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="single-mi-number" class="input-range-value" type="number" value="0" onchange="singlePID.maxInt=parseFloat(this.value)"></td>
-			</tr>
-			<tr>
-				<td><p class="param-label">输出限幅</p></td>
-				<td><input id="single-mo-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="single-mo-number" class="input-range-value" type="number" value="0" onchange="singlePID.maxOut=parseFloat(this.value)"></td>
-			</tr>
+
+	<canvas id="render-canvas"></canvas>
+	<div id="status-float-div" onclick="onStatusFloatClick(event)">
+		<table style="align-self: center;">
+			<tr><td><p class="status-label">目标位置</p></td></tr>
+			<tr><td><p id="status-target-pos" class="status-label" style="color: green;">000.00</p></td></tr>
+			<tr><td><p class="status-label">--------</p></td></tr>
+			<tr><td><p class="status-label">当前位置</p></td></tr>
+			<tr><td><p id="status-ball-pos" class="status-label" style="color: red;">000.00</p></td></tr>
+			<tr><td><p class="status-label">--------</p></td></tr>
+			<tr><td><p class="status-label">PID输出</p></td></tr>
+			<tr><td><p id="status-pid-out" class="status-label">000.00</p></td></tr>
 		</table>
+		<canvas id="scope-canvas"></canvas>
 	</div>
-	<div id="cascade-param-div" class="hori-flex-div" style="display: none;">
-		<table>
-			<th colspan="3" class="table-title">串级内环（速度环）参数</th>
-			<tr>
-				<td><p class="param-label">KP</p></td>
-				<td><input id="inner-kp-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="inner-kp-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.kp=parseFloat(this.value)"></td>
-			</tr>
-			<tr>
-				<td><p class="param-label">KI</p></td>
-				<td><input id="inner-ki-range" class="input-range" type="range" min="0" max="1" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="inner-ki-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.ki=parseFloat(this.value)"></td>
-			</tr>
-			<tr>
-				<td><p class="param-label">KD</p></td>
-				<td><input id="inner-kd-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="inner-kd-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.kd=parseFloat(this.value)"></td>
-			</tr>
-			<tr>
-				<td><p class="param-label">积分限幅</p></td>
-				<td><input id="inner-mi-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="inner-mi-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.maxInt=parseFloat(this.value)"></td>
-			</tr>
-			<tr>
-				<td><p class="param-label">输出限幅</p></td>
-				<td><input id="inner-mo-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="inner-mo-number" class="input-range-value" type="number" value="0" onchange="cascadePID.inner.maxOut=parseFloat(this.value)"></td>
-			</tr>
-		</table>
-		<div class="vert-line-div"></div>
-		<table>
-			<th colspan="3" class="table-title">串级外环（位置环）参数</th>
-			<tr>
-				<td><p class="param-label">KP</p></td>
-				<td><input id="outer-kp-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="outer-kp-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.kp=parseFloat(this.value)"></td>
-			</tr>
-			<tr>
-				<td><p class="param-label">KI</p></td>
-				<td><input id="outer-ki-range" class="input-range" type="range" min="0" max="1" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="outer-ki-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.ki=parseFloat(this.value)"></td>
-			</tr>
-			<tr>
-				<td><p class="param-label">KD</p></td>
-				<td><input id="outer-kd-range" class="input-range" type="range" min="0" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="outer-kd-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.kd=parseFloat(this.value)"></td>
-			</tr>
-			<tr>
-				<td><p class="param-label">积分限幅</p></td>
-				<td><input id="outer-mi-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="outer-mi-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.maxInt=parseFloat(this.value)"></td>
-			</tr>
-			<tr>
-				<td><p class="param-label">输出限幅</p></td>
-				<td><input id="outer-mo-range" class="input-range" type="range" min="0" max="100" step="0.01" value="0" oninput="onRangeInput(event)"></td>
-				<td><input id="outer-mo-number" class="input-range-value" type="number" value="0" onchange="cascadePID.outer.maxOut=parseFloat(this.value)"></td>
-			</tr>
-		</table>
-	</div>
-</div>
-<canvas id="render-canvas"></canvas>
-<div id="status-float-div" onclick="onStatusFloatClick(event)">
-	<table style="align-self: center;">
-		<tr><td><p class="status-label">目标位置</p></td></tr>
-		<tr><td><p id="status-target-pos" class="status-label" style="color: green;">000.00</p></td></tr>
-		<tr><td><p class="status-label">--------</p></td></tr>
-		<tr><td><p class="status-label">当前位置</p></td></tr>
-		<tr><td><p id="status-ball-pos" class="status-label" style="color: red;">000.00</p></td></tr>
-		<tr><td><p class="status-label">--------</p></td></tr>
-		<tr><td><p class="status-label">PID输出</p></td></tr>
-		<tr><td><p id="status-pid-out" class="status-label">000.00</p></td></tr>
-	</table>
-	<canvas id="scope-canvas"></canvas>
-</div>
-<!-- 物理运算逻辑 -->
-<script type="text/javascript">
-	//全局变量定义
-	const ballRadius=20;//小球半径
-	var scrWidth=window.innerWidth;//渲染画布宽度为屏幕高度
-	var scrHeight=window.innerHeight-document.getElementById("head-div").clientHeight;//渲染画布高度为屏幕高度减去头部配置区域高度
-	var targetPos=scrWidth/2;//目标位置
-	var singlePID=new PID(0,0,0,0,0);//单级PID对象
-	var cascadePID=new CascadePID([0,0,0,0,0],[0,0,0,0,0]);//串级PID对象
-	var pidForce={x:0,y:0};//PID计算产生的力
-	var staticForce={x:0,y:0};//干扰恒力
-	var isSinglePID=true;//当前PID类型 true:单级 false:串级
-	const histQueueLength=200;//历史数据留存个数（用于示波器绘图）
-	var histSamples=new Array();//历史数据队列
+	<!-- 物理运算逻辑 -->
+	<script type="text/javascript">
+		//全局变量定义
+		const ballRadius=20;//小球半径
+		var scrWidth=window.innerWidth;//渲染画布宽度为屏幕高度
+		var scrHeight=window.innerHeight-document.getElementById("settings-div").clientHeight;//渲染画布高度为屏幕高度减去头部配置区域高度
+		var targetPos=scrWidth/2;//目标位置
+		var singlePID=new PID(0,0,0,0,0);//单级PID对象
+		var cascadePID=new CascadePID([0,0,0,0,0],[0,0,0,0,0]);//串级PID对象
+		var pidForce={x:0,y:0};//PID计算产生的力
+		var staticForce={x:0,y:0};//干扰恒力
+		var isSinglePID=true;//当前PID类型 true:单级 false:串级
+		const histQueueLength=200;//历史数据留存个数（用于示波器绘图）
+		var histSamples=new Array();//历史数据队列
 
-	//matter引擎相关工具
-	var Engine=Matter.Engine;
-	var Render=Matter.Render;
-	var World=Matter.World;
-	var Bodies=Matter.Bodies;
-	var Body=Matter.Body;
-	var MouseConstraint=Matter.MouseConstraint;
-	var Mouse=Matter.Mouse;
-	var Events=Matter.Events;
+		//matter引擎相关工具
+		var Engine=Matter.Engine;
+		var Render=Matter.Render;
+		var World=Matter.World;
+		var Bodies=Matter.Bodies;
+		var Body=Matter.Body;
+		var MouseConstraint=Matter.MouseConstraint;
+		var Mouse=Matter.Mouse;
+		var Events=Matter.Events;
 
-	//创建引擎，取消重力
-	var engine=Engine.create({
-		gravity:{x:0,y:0}
-	});
+		//创建引擎，取消重力
+		var engine=Engine.create({
+			gravity:{x:0,y:0}
+		});
 
-	//在指定canvas上创建渲染器
-	var render=Render.create({
-		canvas:document.getElementById("render-canvas"),
-		engine:engine,
-		options:{
-			showVelocity:false, //不显示速度
-			width:scrWidth,
-			height:scrHeight,
-			background:"#F4F3DF", //背景颜色与body一致
-			wireframes:false //取消线框模式
+		//在指定canvas上创建渲染器
+		var render=Render.create({
+			canvas:document.getElementById("render-canvas"),
+			engine:engine,
+			options:{
+				showVelocity:false, //不显示速度
+				width:scrWidth,
+				height:scrHeight,
+				background:"#F4F3DF", //背景颜色与body一致
+				wireframes:false //取消线框模式
+			}
+		});
+
+		//创建鼠标约束（用于捕获鼠标事件）
+		var mouse=Mouse.create(render.canvas);//仅捕捉渲染画布上的事件
+		var mouseConstraint=MouseConstraint.create(engine,{
+			mouse:mouse,
+			constraint:{
+				stiffness:0.01,
+				render:{visible: false}
+			},
+			collisionFilter:{group:-1} //不约束小球
+		});
+		World.add(engine.world,mouseConstraint);
+
+		//创建小球刚体
+		var ball=Bodies.circle(scrWidth/2,scrHeight/2,ballRadius,{
+			friction:0, //阻力为0
+			frictionAir:0,
+			restitution:0, //碰撞不反弹
+			mass:1000,
+			render:{fillStyle:"#F5594A"}, //小球颜色
+			collisionFilter:{group:-1} //不被鼠标约束
+		});
+		World.add(engine.world,ball);
+
+		Engine.run(engine);//运行引擎
+		Render.run(render);//运行渲染器
+
+		var renderContext=render.context;//获取渲染器的绘图对象，用于自定义绘图
+		//渲染器绘制直线
+		function renderDrawLine(x1,y1,x2,y2,width,color,dash){
+			if(dash)
+				renderContext.setLineDash([5,5]);
+			else
+				renderContext.setLineDash([5,0]);
+			renderContext.lineWidth=width;
+			renderContext.strokeStyle=color;
+			renderContext.beginPath();
+			renderContext.moveTo(x1,y1);
+			renderContext.lineTo(x2,y2);
+			renderContext.closePath();
+			renderContext.stroke();
 		}
-	});
+		//在渲染器完成渲染后进行自定义绘制，否则会被覆盖
+		Events.on(render,"afterRender",function(event){
+			renderDrawLine(0,scrHeight/2,scrWidth,scrHeight/2,1,"gray",true);//坐标轴线
+			renderDrawLine(ball.position.x,scrHeight/2,ball.position.x+pidForce.x*3,scrHeight/2,5,"#388AF5",false);//PID施力线
+			renderDrawLine(targetPos,scrHeight/2-ballRadius/2,targetPos,scrHeight/2+ballRadius/2,3,"#00E06D",false);//目标位置线
+		});
 
-	//创建鼠标约束（用于捕获鼠标事件）
-	var mouse=Mouse.create(render.canvas);//仅捕捉渲染画布上的事件
-	var mouseConstraint=MouseConstraint.create(engine,{
-		mouse:mouse,
-		constraint:{
-			stiffness:0.01,
-			render:{visible: false}
-		},
-		collisionFilter:{group:-1} //不约束小球
-	});
-	World.add(engine.world,mouseConstraint);
+		//在引擎更新计算前对小球施加力（每次更新后受力会清零）
+		Events.on(engine,"beforeUpdate",function(event){
+			Body.applyForce(ball,{x:0,y:0},staticForce);
+			Body.applyForce(ball,{x:0,y:0},pidForce);
+		});
 
-	//创建小球刚体
-	var ball=Bodies.circle(scrWidth/2,scrHeight/2,ballRadius,{
-		friction:0, //阻力为0
-		frictionAir:0,
-		restitution:0, //碰撞不反弹
-		mass:1000,
-		render:{fillStyle:"#F5594A"}, //小球颜色
-		collisionFilter:{group:-1} //不被鼠标约束
-	});
-	World.add(engine.world,ball);
+		//鼠标操作逻辑
+		var lastRenderMousePosX=0,isRenderMouseDown=false;//上个事件的鼠标位置,当前是否按下
+		//注册鼠标按下事件
+		Events.on(mouseConstraint,"mousedown",function(event){
+			isRenderMouseDown=true;
+			lastRenderMousePosX=event.mouse.position.x;
+		});
+		//注册鼠标移动事件
+		Events.on(mouseConstraint,"mousemove",function(event){
+			if(isRenderMouseDown){
+				var nowPosX=event.mouse.position.x;
+				var speed=nowPosX-lastRenderMousePosX;//计算鼠标移动速度（相对上次事件的移动距离）
+				if(document.getElementById("select-ctrl-ball").checked)//推动小球模式下修改小球位置
+					ball.position.x+=speed*0.02;
+				else //控制目标模式下修改目标位置
+					targetPos+=speed;
+				lastRenderMousePosX=nowPosX;//记录本次鼠标位置
+			}
+		});
+		//注册鼠标抬起事件
+		Events.on(mouseConstraint,"mouseup",function(event){
+			isRenderMouseDown=false;
+		});
 
-	Engine.run(engine);//运行引擎
-	Render.run(render);//运行渲染器
+		//PID定时运算
+		setInterval(function(event){
+			if(isSinglePID){ //单级PID计算
+				singlePID.calc(targetPos,ball.position.x);
+				pidForce.x=singlePID.output;
+			}else{ //串级PID计算
+				cascadePID.calc(targetPos,ball.position.x,ball.velocity.x);
+				pidForce.x=cascadePID.output;
+			}
+			histSamples.push({target:targetPos,ball:ball.position.x});//将当前状态入队
+			if(histSamples.length>histQueueLength)//保持队列不超过指定长度
+				histSamples.shift();
+		},20);//每20ms计算一次
 
-	var renderContext=render.context;//获取渲染器的绘图对象，用于自定义绘图
-	//渲染器绘制直线
-	function renderDrawLine(x1,y1,x2,y2,width,color,dash){
-		if(dash)
-			renderContext.setLineDash([5,5]);
-		else
-			renderContext.setLineDash([5,0]);
-		renderContext.lineWidth=width;
-		renderContext.strokeStyle=color;
-		renderContext.beginPath();
-		renderContext.moveTo(x1,y1);
-		renderContext.lineTo(x2,y2);
-		renderContext.closePath();
-		renderContext.stroke();
-	}
-	//在渲染器完成渲染后进行自定义绘制，否则会被覆盖
-	Events.on(render,"afterRender",function(event){
-		renderDrawLine(0,scrHeight/2,scrWidth,scrHeight/2,1,"gray",true);//坐标轴线
-		renderDrawLine(ball.position.x,scrHeight/2,ball.position.x+pidForce.x*3,scrHeight/2,5,"#388AF5",false);//PID施力线
-		renderDrawLine(targetPos,scrHeight/2-ballRadius/2,targetPos,scrHeight/2+ballRadius/2,3,"#00E06D",false);//目标位置线
-	});
-
-	//在引擎更新计算前对小球施加力（每次更新后受力会清零）
-	Events.on(engine,"beforeUpdate",function(event){
-		Body.applyForce(ball,{x:0,y:0},staticForce);
-		Body.applyForce(ball,{x:0,y:0},pidForce);
-	});
-
-	//鼠标操作逻辑
-	var lastRenderMousePosX=0,isRenderMouseDown=false;//上个事件的鼠标位置,当前是否按下
-	//注册鼠标按下事件
-	Events.on(mouseConstraint,"mousedown",function(event){
-		isRenderMouseDown=true;
-		lastRenderMousePosX=event.mouse.position.x;
-	});
-	//注册鼠标移动事件
-	Events.on(mouseConstraint,"mousemove",function(event){
-		if(isRenderMouseDown){
-			var nowPosX=event.mouse.position.x;
-			var speed=nowPosX-lastRenderMousePosX;//计算鼠标移动速度（相对上次事件的移动距离）
-			if(document.getElementById("select-ctrl-ball").checked)//推动小球模式下修改小球位置
-				ball.position.x+=speed*0.02;
-			else //控制目标模式下修改目标位置
-				targetPos+=speed;
-			lastRenderMousePosX=nowPosX;//记录本次鼠标位置
+	</script>
+	<!-- 界面元素响应 -->
+	<script type="text/javascript">
+		//滑动条滑动事件
+		function onRangeInput(event){
+			var valueElement=document.getElementById(event.srcElement.id.replace("range","number"));//根据id找出对应的数字编辑框
+			valueElement.value=event.srcElement.value;//设置编辑框的值
+			valueElement.onchange();//触发编辑框改变事件
 		}
-	});
-	//注册鼠标抬起事件
-	Events.on(mouseConstraint,"mouseup",function(event){
-		isRenderMouseDown=false;
-	});
-
-	//PID定时运算
-	setInterval(function(event){
-		if(isSinglePID){ //单级PID计算
-			singlePID.calc(targetPos,ball.position.x);
-			pidForce.x=singlePID.output;
-		}else{ //串级PID计算
-			cascadePID.calc(targetPos,ball.position.x,ball.velocity.x);
-			pidForce.x=cascadePID.output;
+		//PID类型切换
+		function onPIDTypeChange(isSingle){
+			isSinglePID=isSingle;
+			if(isSingle){ //切换为单级PID模式
+				document.getElementById("single-param-div").style.display="flex";//显示单级PID配置项
+				document.getElementById("cascade-param-div").style.display="none";//隐藏串级PID配置项
+				cascadePID.clear();//清除串级PID历史数据
+			}else{ //切换为串级PID模式
+				document.getElementById("single-param-div").style.display="none";
+				document.getElementById("cascade-param-div").style.display="flex";
+				singlePID.clear();
+			}
 		}
-		histSamples.push({target:targetPos,ball:ball.position.x});//将当前状态入队
-		if(histSamples.length>histQueueLength)//保持队列不超过指定长度
-			histSamples.shift();
-	},20);//每20ms计算一次
-
-</script>
-<!-- 界面元素响应 -->
-<script type="text/javascript">
-	//滑动条滑动事件
-	function onRangeInput(event){
-		var valueElement=document.getElementById(event.srcElement.id.replace("range","number"));//根据id找出对应的数字编辑框
-		valueElement.value=event.srcElement.value;//设置编辑框的值
-		valueElement.onchange();//触发编辑框改变事件
-	}
-	//PID类型切换
-	function onPIDTypeChange(isSingle){
-		isSinglePID=isSingle;
-		if(isSingle){ //切换为单级PID模式
-			document.getElementById("single-param-div").style.display="flex";//显示单级PID配置项
-			document.getElementById("cascade-param-div").style.display="none";//隐藏串级PID配置项
-			cascadePID.clear();//清除串级PID历史数据
-		}else{ //切换为串级PID模式
-			document.getElementById("single-param-div").style.display="none";
-			document.getElementById("cascade-param-div").style.display="flex";
-			singlePID.clear();
+		//教程模式切换
+		function onTeachSwitch(switchon){
+			var teachDiv=document.getElementById("teach-div");//获取窗口div
+			if(switchon){ //展开窗口
+				teachDiv.style.animation="1s teach-float-right-anim";
+				teachDiv.style.transform="translateX(0)";
+			}else{ //收起窗口
+				teachDiv.style.animation="1s teach-float-left-anim";
+				teachDiv.style.transform="translateX(-100%)";
+			}
 		}
-	}
-	//状态浮动窗口点击动画响应
-	var floatDivExpanded=true;//当前展开状态
-	function onStatusFloatClick(event){ //在窗口被点击时调用
-		var floatDiv=document.getElementById("status-float-div");//获取窗口div
-		if(floatDivExpanded){ //收起窗口
-			floatDiv.style.animation="1s status-float-down-anim";
-			floatDiv.style.transform="translateY(80%)";
-			floatDivExpanded=false;
-		}else{ //展开窗口
-			floatDiv.style.animation="1s status-float-up-anim";
-			floatDiv.style.transform="translateY(0)";
-			floatDivExpanded=true;
-		}2
-	}
-</script>
-<!-- 状态浮动窗口更新 -->
-<script type="text/javascript">
-	var scope=document.getElementById("scope-canvas");//获取示波器canvas元素
-	//定时更新状态窗口
-	setInterval(function(){
-		//绘制波形
-		var scopectx=scope.getContext("2d");//获取示波器2d绘图对象
-		scopectx.clearRect(0,0,scope.width,scope.height);//清空示波器内容
-		scopectx.lineWidth=1;//设置波形线宽
-		for(var i=0;i<histSamples.length-1;i++){ //依次绘制各历史数据点
-			//绘制目标位置
-			scopectx.strokeStyle="green";
-			scopectx.beginPath();
-			scopectx.moveTo(scope.width*i/histQueueLength,scope.height/2-(histSamples[i].target-scrWidth/2)*scope.height/scrWidth);
-			scopectx.lineTo(scope.width*(i+1)/histQueueLength,scope.height/2-(histSamples[i+1].target-scrWidth/2)*scope.height/scrWidth);
-			scopectx.closePath();
-			scopectx.stroke();
-			//绘制小球位置
-			scopectx.strokeStyle="red";
-			scopectx.beginPath();
-			scopectx.moveTo(scope.width*i/histQueueLength,scope.height/2-(histSamples[i].ball-scrWidth/2)*scope.height/scrWidth);
-			scopectx.lineTo(scope.width*(i+1)/histQueueLength,scope.height/2-(histSamples[i+1].ball-scrWidth/2)*scope.height/scrWidth);
-			scopectx.closePath();
-			scopectx.stroke();
+		//状态浮动窗口点击动画响应
+		var floatDivExpanded=true;//当前展开状态
+		function onStatusFloatClick(event){ //在窗口被点击时调用
+			var floatDiv=document.getElementById("status-float-div");//获取窗口div
+			if(floatDivExpanded){ //收起窗口
+				floatDiv.style.animation="1s status-float-down-anim";
+				floatDiv.style.transform="translateY(80%)";
+				floatDivExpanded=false;
+			}else{ //展开窗口
+				floatDiv.style.animation="1s status-float-up-anim";
+				floatDiv.style.transform="translateY(0)";
+				floatDivExpanded=true;
+			}2
 		}
-		//更新状态值
-		document.getElementById("status-target-pos").innerText=targetPos.toFixed(2);
-		document.getElementById("status-ball-pos").innerText=ball.position.x.toFixed(2);
-		document.getElementById("status-pid-out").innerText=pidForce.x.toFixed(2);
-	},30);//30ms更新一次
-</script>
+	</script>
+	<!-- 教程窗口更新 -->
+	<script type="text/javascript">
+		var teachInfoText=document.getElementById("teach-info");
+		var teachStepRatioText=document.getElementById("teach-step-ratio");
+		var teachStep=0;
+		teachInfoText.innerText=teachInfos[0];
+		teachStepRatioText.innerText="1/"+teachInfos.length;
+		function onTeachStep(forward){
+			if(forward && teachStep<teachInfos.length-1){
+				teachStep++;
+			}else if(!forward && teachStep>0){
+				teachStep--;
+			}
+			teachInfoText.style.animation="0.5s teach-info-enter-anim";
+			teachInfoText.innerText=teachInfos[teachStep];
+			teachStepRatioText.innerText=""+(teachStep+1)+"/"+teachInfos.length;
+		}
+		teachInfoText.onanimationend=function(){
+			teachInfoText.style.animation="";
+		}
+	</script>
+	<!-- 状态浮动窗口更新 -->
+	<script type="text/javascript">
+		var scope=document.getElementById("scope-canvas");//获取示波器canvas元素
+		//定时更新状态窗口
+		setInterval(function(){
+			//绘制波形
+			var scopectx=scope.getContext("2d");//获取示波器2d绘图对象
+			scopectx.clearRect(0,0,scope.width,scope.height);//清空示波器内容
+			scopectx.lineWidth=1;//设置波形线宽
+			for(var i=0;i<histSamples.length-1;i++){ //依次绘制各历史数据点
+				//绘制目标位置
+				scopectx.strokeStyle="green";
+				scopectx.beginPath();
+				scopectx.moveTo(scope.width*i/histQueueLength,scope.height/2-(histSamples[i].target-scrWidth/2)*scope.height/scrWidth);
+				scopectx.lineTo(scope.width*(i+1)/histQueueLength,scope.height/2-(histSamples[i+1].target-scrWidth/2)*scope.height/scrWidth);
+				scopectx.closePath();
+				scopectx.stroke();
+				//绘制小球位置
+				scopectx.strokeStyle="red";
+				scopectx.beginPath();
+				scopectx.moveTo(scope.width*i/histQueueLength,scope.height/2-(histSamples[i].ball-scrWidth/2)*scope.height/scrWidth);
+				scopectx.lineTo(scope.width*(i+1)/histQueueLength,scope.height/2-(histSamples[i+1].ball-scrWidth/2)*scope.height/scrWidth);
+				scopectx.closePath();
+				scopectx.stroke();
+			}
+			//更新状态值
+			document.getElementById("status-target-pos").innerText=targetPos.toFixed(2);
+			document.getElementById("status-ball-pos").innerText=ball.position.x.toFixed(2);
+			document.getElementById("status-pid-out").innerText=pidForce.x.toFixed(2);
+		},30);//30ms更新一次
+	</script>
 </body>
 </html>
