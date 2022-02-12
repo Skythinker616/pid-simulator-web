@@ -212,7 +212,7 @@
 	</style>
 	<script src="scripts/matter.min.js"></script>
 	<script src="scripts/pid.js?v=1"></script>
-	<script src="scripts/teach-info.js?v=2"></script>
+	<script src="scripts/teach-info.js?v=3"></script>
 </head>
 <body>
 	<div id="top-div">
@@ -220,6 +220,15 @@
 			<div>
 				<table>
 					<th colspan="3" class="table-title">全局设置</th>
+					<tr>
+						<td><p class="param-label">教程模式</p></td>
+						<td>
+							<div class="hori-flex-div">
+								<input id="select-teach-on" name="teach-switch" type="radio" onclick="onTeachSwitch(true);"><label for="select-teach-on">开</label>
+								<input id="select-teach-off" name="teach-switch" type="radio" checked onclick="onTeachSwitch(false);"><label for="select-teach-off">关</label>
+							</div>
+						</td>
+					</tr>
 					<tr>
 						<td><p class="param-label">鼠标操作</p></td>
 						<td>
@@ -235,15 +244,6 @@
 							<div class="hori-flex-div">
 								<input id="select-pid-single" name="pid-type" type="radio" checked onclick="onPIDTypeChange(true);"><label for="select-pid-single">单级PID</label>
 								<input id="select-pid-cascade" name="pid-type" type="radio" onclick="onPIDTypeChange(false);"><label for="select-pid-cascade">串级PID</label>
-							</div>
-						</td>
-					</tr>
-					<tr>
-						<td><p class="param-label">教程模式</p></td>
-						<td>
-							<div class="hori-flex-div">
-								<input id="select-teach-on" name="teach-switch" type="radio" onclick="onTeachSwitch(true);"><label for="select-teach-on">开</label>
-								<input id="select-teach-off" name="teach-switch" type="radio" checked onclick="onTeachSwitch(false);"><label for="select-teach-off">关</label>
 							</div>
 						</td>
 					</tr>
