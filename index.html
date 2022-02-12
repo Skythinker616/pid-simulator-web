@@ -4,6 +4,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="initial-scale=1, maximum-scale=3, minimum-scale=1, user-scalable=no">
 	<style>
+		/* 状态窗口移动动画 */
 		@keyframes status-float-down-anim{  
 			0% {transform: translateY(0);}
 			100% {transform: translateY(80%);}
@@ -12,59 +13,15 @@
 			0% {transform: translateY(80%);}
 			100% {transform: translateY(0);}
 		}
-		p{
-			margin: 0px;
-		}
-		td{
-			white-space: normal;
-		}
-		#status-float-div{
-			position: fixed;
-			display: flex;
-			flex-direction: row;
-			bottom: 0px;
-			left: 0px;
-			max-height: 200px;
-			width: 100%;
-			background-color: lightgray;
-			opacity: 0.8;
-			border-radius: 10px;
-		}
-		#scope-canvas{
-			width: 100%;
-			border: 2px solid #7DA3A8;
-			margin: 20px;
-			flex-grow: 1;
-		}
-		#render-canvas{
-			width: 100%;
-			height: 100%;
-		}
-		#head-div{
-			display: flex;
-			flex-direction: row;
-			overflow-y: auto;
-			border-bottom: solid 2px lightgray;
-		}
-		.hori-flex-div{
-			display: flex;
-			flex-direction: row;
-		}
-		.vert-line-div{
-			width: 0px;
-			border-left: solid 2px #7DA3A8;
-			margin: 10px 10px;
-		}
-		.table-title{
-			font-family: Georgia, serif;
-			font-weight: bold;
-			font-size: small;
-			white-space: nowrap;
-			margin: 5px 0px;
-		}
-		body{
-			background-color: #F4F3DF;
-		}
+	</style>
+	<style>
+		/* 取消所有段落外边界 */
+		p{margin: 0px;}
+		/* 禁用所有表格中的换行 */
+		td{white-space: normal;}
+		/* 设置全屏背景颜色 */
+		body{background-color: #F4F3DF;}
+		/* 数字编辑框样式 */
 		input[type="number"]{
 			background-color: transparent;
 			border-left: 0px;
@@ -74,12 +31,14 @@
 			text-align: center;
 			max-width: 40px;
 		}
+		/* 拖动条滑动条样式 */
 		input[type="range"]{
 			-webkit-appearance: none;
 			height: 12px;
 			border-radius: 6px;
 			background-color: lightgrey;
 		}
+		/* 拖动条滑块样式 */
 		input[type="range"]::-webkit-slider-thumb{
 			-webkit-appearance: none;
 			height: 12px;
@@ -87,6 +46,41 @@
 			border-radius: 6px;
 			background-color: #7DA3A8;
 		}
+		/* 单选按钮样式（隐藏按钮） */
+		input[type="radio"]{
+			height: 0;
+			width: 0;
+		}
+		/* 单选按钮后的标签样式 */
+		input[type="radio"]+label{
+			font-family: Georgia, serif;
+			font-size: small;
+		}
+		/* 选中后的单选按钮后的标签样式 */
+		input[type="radio"]:checked+label{
+			font-weight: bold;
+			color: #7DA3A8;
+		}
+		/* 横向分布div */
+		.hori-flex-div{
+			display: flex;
+			flex-direction: row;
+		}
+		/* 竖向分界线div */
+		.vert-line-div{
+			width: 0px;
+			border-left: solid 2px #7DA3A8;
+			margin: 10px 10px;
+		}
+		/* 表头样式 */
+		.table-title{
+			font-family: Georgia, serif;
+			font-weight: bold;
+			font-size: small;
+			white-space: nowrap;
+			margin: 5px 0px;
+		}
+		/* 配置参数标签样式 */
 		.param-label{
 			font-family: Georgia, serif;
 			font-weight: bold;
@@ -95,6 +89,7 @@
 			white-space: nowrap;
 			margin: 5px 0px;
 		}
+		/* 状态窗口中标签样式 */
 		.status-label{
 			font-family: Georgia, serif;
 			font-size: small;
@@ -102,17 +97,38 @@
 			white-space: nowrap;
 			margin: 0px 5px;
 		}
-		input[type="radio"]{
-			height: 0;
-			width: 0;
+		/* 状态浮动窗口样式 */
+		#status-float-div{
+			position: fixed;
+			display: flex;
+			flex-direction: row;
+			bottom: 0px;
+			left: 0px;
+			max-height: 200px;
+			width: 100%;
+			max-width: 800px;
+			background-color: lightgray;
+			opacity: 0.8;
+			border-radius: 10px;
 		}
-		input[type="radio"]+label{
-			font-family: Georgia, serif;
-			font-size: small;
+		/* 示波器canvas样式 */
+		#scope-canvas{
+			width: 100%;
+			border: 2px solid #7DA3A8;
+			margin: 20px;
+			flex-grow: 1;
 		}
-		input[type="radio"]:checked+label{
-			font-weight: bold;
-			color: #7DA3A8;
+		/* matter.js渲染canvas样式 */
+		#render-canvas{
+			width: 100%;
+			height: 100%;
+		}
+		/* 头部配置窗口样式 */
+		#head-div{
+			display: flex;
+			flex-direction: row;
+			overflow-y: auto;
+			border-bottom: solid 2px lightgray;
 		}
 	</style>
 	<script src="scripts/matter.min.js"></script>
@@ -253,77 +269,22 @@
 	</table>
 	<canvas id="scope-canvas"></canvas>
 </div>
+<!-- 物理运算逻辑 -->
 <script type="text/javascript">
-	function onRangeInput(event){
-		var valueElement=document.getElementById(event.srcElement.id.replace("range","number"));
-		valueElement.value=event.srcElement.value;
-		valueElement.onchange();
-	}
-	function onPIDTypeChange(isSingle){
-		isSinglePID=isSingle;
-		if(isSingle){
-			document.getElementById("single-param-div").style.display="flex";
-			document.getElementById("cascade-param-div").style.display="none";
-			cascadePID.clear();
-		}else{
-			document.getElementById("single-param-div").style.display="none";
-			document.getElementById("cascade-param-div").style.display="flex";
-			singlePID.clear();
-		}
-	}
-</script>
-<script type="text/javascript">
-	var scope=document.getElementById("scope-canvas");
-	setInterval(function(){
-		var scopectx=scope.getContext("2d");
-		scopectx.clearRect(0,0,scope.width,scope.height);
-		scopectx.lineWidth=1;
-		for(var i=0;i<histSamples.length-1;i++){
-			scopectx.strokeStyle="green";
-			scopectx.beginPath();
-			scopectx.moveTo(scope.width*i/histQueueLength,scope.height/2-(histSamples[i].target-scrWidth/2)*scope.height/scrWidth);
-			scopectx.lineTo(scope.width*(i+1)/histQueueLength,scope.height/2-(histSamples[i+1].target-scrWidth/2)*scope.height/scrWidth);
-			scopectx.closePath();
-			scopectx.stroke();
+	//全局变量定义
+	const ballRadius=20;//小球半径
+	var scrWidth=window.innerWidth;//渲染画布宽度为屏幕高度
+	var scrHeight=window.innerHeight-document.getElementById("head-div").clientHeight;//渲染画布高度为屏幕高度减去头部配置区域高度
+	var targetPos=scrWidth/2;//目标位置
+	var singlePID=new PID(0,0,0,0,0);//单级PID对象
+	var cascadePID=new CascadePID([0,0,0,0,0],[0,0,0,0,0]);//串级PID对象
+	var pidForce={x:0,y:0};//PID计算产生的力
+	var staticForce={x:0,y:0};//干扰恒力
+	var isSinglePID=true;//当前PID类型 true:单级 false:串级
+	const histQueueLength=200;//历史数据留存个数（用于示波器绘图）
+	var histSamples=new Array();//历史数据队列
 
-			scopectx.strokeStyle="red";
-			scopectx.beginPath();
-			scopectx.moveTo(scope.width*i/histQueueLength,scope.height/2-(histSamples[i].ball-scrWidth/2)*scope.height/scrWidth);
-			scopectx.lineTo(scope.width*(i+1)/histQueueLength,scope.height/2-(histSamples[i+1].ball-scrWidth/2)*scope.height/scrWidth);
-			scopectx.closePath();
-			scopectx.stroke();
-		}
-		document.getElementById("status-target-pos").innerText=targetPos.toFixed(2);
-		document.getElementById("status-ball-pos").innerText=ball.position.x.toFixed(2);
-		document.getElementById("status-pid-out").innerText=pidForce.x.toFixed(2);
-	},30);
-	var floatDivExpanded=true;
-	function onStatusFloatClick(event){
-		var floatDiv=document.getElementById("status-float-div");
-		if(floatDivExpanded){
-			floatDiv.style.animation="1s status-float-down-anim";
-			floatDiv.style.transform="translateY(80%)";
-			floatDivExpanded=false;
-		}else{
-			floatDiv.style.animation="1s status-float-up-anim";
-			floatDiv.style.transform="translateY(0)";
-			floatDivExpanded=true;
-		}
-	}
-</script>
-<script type="text/javascript">
-	const ballRadius=20,wallDepth=100;
-	var scrWidth=window.innerWidth;
-	var scrHeight=window.innerHeight-document.getElementById("head-div").clientHeight;
-	var targetPos=scrWidth/2;
-	var pidForce={x:0,y:0};
-	var singlePID=new PID(0,0,0,0,0);
-	var cascadePID=new CascadePID([0,0,0,0,0],[0,0,0,0,0]);
-	var staticForce={x:0,y:0};
-	var isSinglePID=true;
-	const histQueueLength=200;
-	var histSamples=new Array();
-
+	//matter引擎相关工具
 	var Engine=Matter.Engine;
 	var Render=Matter.Render;
 	var World=Matter.World;
@@ -333,106 +294,183 @@
 	var Mouse=Matter.Mouse;
 	var Events=Matter.Events;
 
+	//创建引擎，取消重力
 	var engine=Engine.create({
 		gravity:{x:0,y:0}
 	});
+
+	//在指定canvas上创建渲染器
 	var render=Render.create({
 		canvas:document.getElementById("render-canvas"),
 		engine:engine,
 		options:{
-			showVelocity:false,
+			showVelocity:false, //不显示速度
 			width:scrWidth,
 			height:scrHeight,
-			background:"#F4F3DF",
-			wireframes:false
+			background:"#F4F3DF", //背景颜色与body一致
+			wireframes:false //取消线框模式
 		}
 	});
 
-	var mouse=Mouse.create(render.canvas);
+	//创建鼠标约束（用于捕获鼠标事件）
+	var mouse=Mouse.create(render.canvas);//仅捕捉渲染画布上的事件
 	var mouseConstraint=MouseConstraint.create(engine,{
 		mouse:mouse,
 		constraint:{
 			stiffness:0.01,
 			render:{visible: false}
 		},
-		collisionFilter:{group:-1}
+		collisionFilter:{group:-1} //不约束小球
 	});
-	World.add(engine.world,mouseConstraint)
+	World.add(engine.world,mouseConstraint);
 
+	//创建小球刚体
 	var ball=Bodies.circle(scrWidth/2,scrHeight/2,ballRadius,{
-		friction:0,
+		friction:0, //阻力为0
 		frictionAir:0,
-		restitution:0,
+		restitution:0, //碰撞不反弹
 		mass:1000,
-		render:{fillStyle:"#F5594A"},
-		collisionFilter:{group:-1}
+		render:{fillStyle:"#F5594A"}, //小球颜色
+		collisionFilter:{group:-1} //不被鼠标约束
 	});
 	World.add(engine.world,ball);
 
-	Engine.run(engine);
-	Render.run(render);
+	Engine.run(engine);//运行引擎
+	Render.run(render);//运行渲染器
 
-	var ctx=render.context;
-	ctx.font="25px 'Microsoft YaHei'";
-
-	function ctxDrawLine(x1,y1,x2,y2,width,color,dash){
+	var renderContext=render.context;//获取渲染器的绘图对象，用于自定义绘图
+	//渲染器绘制直线
+	function renderDrawLine(x1,y1,x2,y2,width,color,dash){
 		if(dash)
-			ctx.setLineDash([5,5]);
+			renderContext.setLineDash([5,5]);
 		else
-			ctx.setLineDash([5,0]);
-		ctx.lineWidth=width;
-		ctx.strokeStyle=color;
-		ctx.beginPath();
-		ctx.moveTo(x1,y1);
-		ctx.lineTo(x2,y2);
-		ctx.closePath();
-		ctx.stroke();
+			renderContext.setLineDash([5,0]);
+		renderContext.lineWidth=width;
+		renderContext.strokeStyle=color;
+		renderContext.beginPath();
+		renderContext.moveTo(x1,y1);
+		renderContext.lineTo(x2,y2);
+		renderContext.closePath();
+		renderContext.stroke();
 	}
+	//在渲染器完成渲染后进行自定义绘制，否则会被覆盖
 	Events.on(render,"afterRender",function(event){
-		ctxDrawLine(0,scrHeight/2,scrWidth,scrHeight/2,1,"gray",true);
-		ctxDrawLine(ball.position.x,scrHeight/2,ball.position.x+pidForce.x*3,scrHeight/2,5,"#388AF5",false);
-		ctxDrawLine(targetPos,scrHeight/2-ballRadius/2,targetPos,scrHeight/2+ballRadius/2,3,"#00E06D",false);
+		renderDrawLine(0,scrHeight/2,scrWidth,scrHeight/2,1,"gray",true);//坐标轴线
+		renderDrawLine(ball.position.x,scrHeight/2,ball.position.x+pidForce.x*3,scrHeight/2,5,"#388AF5",false);//PID施力线
+		renderDrawLine(targetPos,scrHeight/2-ballRadius/2,targetPos,scrHeight/2+ballRadius/2,3,"#00E06D",false);//目标位置线
 	});
 
+	//在引擎更新计算前对小球施加力（每次更新后受力会清零）
 	Events.on(engine,"beforeUpdate",function(event){
 		Body.applyForce(ball,{x:0,y:0},staticForce);
 		Body.applyForce(ball,{x:0,y:0},pidForce);
 	});
 
-	var lastMouseMovePosX=0,mouseDownPosX=0,isDown=false;
+	//鼠标操作逻辑
+	var lastRenderMousePosX=0,isRenderMouseDown=false;//上个事件的鼠标位置,当前是否按下
+	//注册鼠标按下事件
 	Events.on(mouseConstraint,"mousedown",function(event){
-		isDown=true;
-		mouseDownPosX=event.mouse.position.x;
-		lastMouseMovePosX=event.mouse.position.x;
+		isRenderMouseDown=true;
+		lastRenderMousePosX=event.mouse.position.x;
 	});
+	//注册鼠标移动事件
 	Events.on(mouseConstraint,"mousemove",function(event){
-		if(isDown){
+		if(isRenderMouseDown){
 			var nowPosX=event.mouse.position.x;
-			var speed=nowPosX-lastMouseMovePosX;
-			if(document.getElementById("select-ctrl-ball").checked)
+			var speed=nowPosX-lastRenderMousePosX;//计算鼠标移动速度（相对上次事件的移动距离）
+			if(document.getElementById("select-ctrl-ball").checked)//推动小球模式下修改小球位置
 				ball.position.x+=speed*0.02;
-			else
+			else //控制目标模式下修改目标位置
 				targetPos+=speed;
-			lastMouseMovePosX=nowPosX;
+			lastRenderMousePosX=nowPosX;//记录本次鼠标位置
 		}
 	});
+	//注册鼠标抬起事件
 	Events.on(mouseConstraint,"mouseup",function(event){
-		isDown=false;
+		isRenderMouseDown=false;
 	});
 
+	//PID定时运算
 	setInterval(function(event){
-		if(isSinglePID){
+		if(isSinglePID){ //单级PID计算
 			singlePID.calc(targetPos,ball.position.x);
 			pidForce.x=singlePID.output;
-		}else{
+		}else{ //串级PID计算
 			cascadePID.calc(targetPos,ball.position.x,ball.velocity.x);
 			pidForce.x=cascadePID.output;
 		}
-		histSamples.push({target:targetPos,ball:ball.position.x});
-		if(histSamples.length>histQueueLength)
+		histSamples.push({target:targetPos,ball:ball.position.x});//将当前状态入队
+		if(histSamples.length>histQueueLength)//保持队列不超过指定长度
 			histSamples.shift();
-	},20);
+	},20);//每20ms计算一次
 
+</script>
+<!-- 界面元素响应 -->
+<script type="text/javascript">
+	//滑动条滑动事件
+	function onRangeInput(event){
+		var valueElement=document.getElementById(event.srcElement.id.replace("range","number"));//根据id找出对应的数字编辑框
+		valueElement.value=event.srcElement.value;//设置编辑框的值
+		valueElement.onchange();//触发编辑框改变事件
+	}
+	//PID类型切换
+	function onPIDTypeChange(isSingle){
+		isSinglePID=isSingle;
+		if(isSingle){ //切换为单级PID模式
+			document.getElementById("single-param-div").style.display="flex";//显示单级PID配置项
+			document.getElementById("cascade-param-div").style.display="none";//隐藏串级PID配置项
+			cascadePID.clear();//清除串级PID历史数据
+		}else{ //切换为串级PID模式
+			document.getElementById("single-param-div").style.display="none";
+			document.getElementById("cascade-param-div").style.display="flex";
+			singlePID.clear();
+		}
+	}
+	//状态浮动窗口点击动画响应
+	var floatDivExpanded=true;//当前展开状态
+	function onStatusFloatClick(event){ //在窗口被点击时调用
+		var floatDiv=document.getElementById("status-float-div");//获取窗口div
+		if(floatDivExpanded){ //收起窗口
+			floatDiv.style.animation="1s status-float-down-anim";
+			floatDiv.style.transform="translateY(80%)";
+			floatDivExpanded=false;
+		}else{ //展开窗口
+			floatDiv.style.animation="1s status-float-up-anim";
+			floatDiv.style.transform="translateY(0)";
+			floatDivExpanded=true;
+		}2
+	}
+</script>
+<!-- 状态浮动窗口更新 -->
+<script type="text/javascript">
+	var scope=document.getElementById("scope-canvas");//获取示波器canvas元素
+	//定时更新状态窗口
+	setInterval(function(){
+		//绘制波形
+		var scopectx=scope.getContext("2d");//获取示波器2d绘图对象
+		scopectx.clearRect(0,0,scope.width,scope.height);//清空示波器内容
+		scopectx.lineWidth=1;//设置波形线宽
+		for(var i=0;i<histSamples.length-1;i++){ //依次绘制各历史数据点
+			//绘制目标位置
+			scopectx.strokeStyle="green";
+			scopectx.beginPath();
+			scopectx.moveTo(scope.width*i/histQueueLength,scope.height/2-(histSamples[i].target-scrWidth/2)*scope.height/scrWidth);
+			scopectx.lineTo(scope.width*(i+1)/histQueueLength,scope.height/2-(histSamples[i+1].target-scrWidth/2)*scope.height/scrWidth);
+			scopectx.closePath();
+			scopectx.stroke();
+			//绘制小球位置
+			scopectx.strokeStyle="red";
+			scopectx.beginPath();
+			scopectx.moveTo(scope.width*i/histQueueLength,scope.height/2-(histSamples[i].ball-scrWidth/2)*scope.height/scrWidth);
+			scopectx.lineTo(scope.width*(i+1)/histQueueLength,scope.height/2-(histSamples[i+1].ball-scrWidth/2)*scope.height/scrWidth);
+			scopectx.closePath();
+			scopectx.stroke();
+		}
+		//更新状态值
+		document.getElementById("status-target-pos").innerText=targetPos.toFixed(2);
+		document.getElementById("status-ball-pos").innerText=ball.position.x.toFixed(2);
+		document.getElementById("status-pid-out").innerText=pidForce.x.toFixed(2);
+	},30);//30ms更新一次
 </script>
 </body>
 </html>
