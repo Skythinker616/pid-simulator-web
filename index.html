@@ -212,7 +212,7 @@
 	</style>
 	<script src="scripts/matter.min.js"></script>
 	<script src="scripts/pid.js?v=1"></script>
-	<script src="scripts/teach-info.js?v=3"></script>
+	<script src="scripts/teach-info.js?v=4"></script>
 </head>
 <body>
 	<div id="top-div">
@@ -539,6 +539,12 @@
 				teachDiv.style.transform="translateX(-100%)";
 			}
 		}
+		//进入时询问是否开启教程
+		setTimeout(function(){
+			if(confirm("是否开启引导教程？")){
+				document.getElementById("select-teach-on").click();
+			}
+		},500);
 		//状态浮动窗口点击动画响应
 		var floatDivExpanded=true;//当前展开状态
 		function onStatusFloatClick(event){ //在窗口被点击时调用
@@ -551,7 +557,7 @@
 				floatDiv.style.animation="1s status-float-up-anim";
 				floatDiv.style.transform="translateY(0)";
 				floatDivExpanded=true;
-			}2
+			}
 		}
 	</script>
 	<!-- 教程窗口更新 -->
@@ -559,7 +565,7 @@
 		var teachInfoText=document.getElementById("teach-info");
 		var teachStepRatioText=document.getElementById("teach-step-ratio");
 		var teachStep=0;
-		teachInfoText.innerText=teachInfos[0];
+		teachInfoText.innerHTML=teachInfos[0];
 		teachStepRatioText.innerText="1/"+teachInfos.length;
 		function onTeachStep(forward){
 			if(forward && teachStep<teachInfos.length-1){
@@ -568,7 +574,7 @@
 				teachStep--;
 			}
 			teachInfoText.style.animation="0.5s teach-info-enter-anim";
-			teachInfoText.innerText=teachInfos[teachStep];
+			teachInfoText.innerHTML=teachInfos[teachStep];
 			teachStepRatioText.innerText=""+(teachStep+1)+"/"+teachInfos.length;
 		}
 		teachInfoText.onanimationend=function(){
