@@ -3,6 +3,8 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="initial-scale=1, maximum-scale=3, minimum-scale=1, user-scalable=no">
+	<title>PID Web Sim</title>
+	<link rel="shortcut icon" href="img/icon.png" type="image/x-icon">
 	<style>
 		/* 状态窗口移动动画 */
 		@keyframes status-float-down-anim{  
@@ -15,12 +17,12 @@
 		}
 		/* 教程窗口移动动画 */
 		@keyframes teach-float-right-anim{  
-			0% {transform: translateX(-100%);}
+			0% {transform: translateX(-100vw);}
 			100% {transform: translateX(0);}
 		}
 		@keyframes teach-float-left-anim{  
 			0% {transform: translateX(0);}
-			100% {transform: translateX(-100%);}
+			100% {transform: translateX(-100vw);}
 		}
 		/* 教程文字淡入动画 */
 		@keyframes teach-info-enter-anim{  
@@ -169,6 +171,56 @@
 			flex-direction:	column;
 			position: relative;
 		}
+		/* 头部区域样式 */
+		#header-div{
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: space-between;
+			background-color: white;
+			padding: 10px 10px;
+			margin-bottom: 20px;
+			box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.15);
+			border-bottom-left-radius: 15px;
+			border-bottom-right-radius: 15px;
+		}
+		/* 头部子div样式 */
+		#header-div > div{
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+		}
+		/* 图标样式 */
+		#icon-img{
+			width: 25px;
+			height: 25px;
+			margin: 5px;
+		}
+		/* 标题文字样式 */
+		#title-text{
+			font-family: Georgia, serif;
+			font-weight: bold;
+			font-size: large;
+			margin: 0px;
+			padding: 0px;
+		}
+		/* 头部链接样式 */
+		#header-div a{
+			font-size: small;
+			font-weight: bold;
+			margin: 0px 5px;
+			padding: 0px;
+			text-decoration: none;
+			color: #7DA3A8;
+			justify-content: center;
+			display: flex;
+		}
+		/* 头部链接图标样式 */
+		#header-div a img{
+			width: 15px;
+			height: 15px;
+			margin: 0px 5px;
+		}
 		/* 配置区域样式 */
 		#settings-div{
 			display: flex;
@@ -191,7 +243,7 @@
 			border-top-right-radius: 15px;
 			border-bottom-right-radius: 15px;
 			align-items: center;
-			transform: translateX(-100%);
+			transform: translateX(-100vw);
 		}
 		/* 教程页码文字样式 */
 		#teach-step-ratio{
@@ -209,6 +261,25 @@
 			font-size: medium;
 			margin: 5px;
 		}
+
+		/* 电脑端样式, 各元素居中显示 */
+		@media (min-width: 800px){
+			#settings-div{
+				justify-content: center;
+			}
+			#status-float-div{
+				margin: auto;
+				left: 0px;
+				right: 0px;
+			}
+			#teach-div{
+				margin: 0 auto;
+				left: 0px;
+				right: 0px;
+				border-top-left-radius: 15px;
+				border-bottom-left-radius: 15px;
+			}
+		}
 	</style>
 	<script src="scripts/matter.min.js"></script>
 	<script src="scripts/pid.js?v=1"></script>
@@ -216,6 +287,16 @@
 </head>
 <body>
 	<div id="top-div">
+		<div id="header-div">
+			<div class="hori-flex-div">
+				<img id="icon-img" src="img/icon.png">
+				<p id="title-text">PID Web Sim</p>
+			</div>
+			<div class="hori-flex-div">
+				<a href="https://blog.csdn.net/skythinker616/article/details/123019829"><img src="img/csdn.png"/>CSDN</a>
+				<a href="https://gitee.com/skythinker/pid-simulator-web"><img src="img/gitee.png"/>Gitee</a>
+			</div>
+		</div>
 		<div id="settings-div">
 			<div>
 				<table>
@@ -249,7 +330,7 @@
 					</tr>
 					<tr>
 						<td><p class="param-label">干扰恒力</p></td>
-						<td><input id="static-force-range" class="input-range" type="range" min="-10" max="10" step="0.01" value="0" oninput="onRangeInput(event)"></td>
+						<td><input id="static-force-range" class="input-range" type="range" min="-10" max="10" step="0.5" value="0" oninput="onRangeInput(event)"></td>
 						<td><input id="static-force-number" class="input-range-value" type="number" value="0" onchange="staticForce.x=parseFloat(this.value)"></td>
 					</tr>
 				</table>
@@ -481,7 +562,7 @@
 				var nowPosX=event.mouse.position.x;
 				var speed=nowPosX-lastRenderMousePosX;//计算鼠标移动速度（相对上次事件的移动距离）
 				if(document.getElementById("select-ctrl-ball").checked)//推动小球模式下修改小球位置
-					ball.position.x+=speed*0.02;
+					ball.position.x+=speed*0.1;
 				else //控制目标模式下修改目标位置
 					targetPos+=speed;
 				lastRenderMousePosX=nowPosX;//记录本次鼠标位置
@@ -536,15 +617,15 @@
 				teachDiv.style.transform="translateX(0)";
 			}else{ //收起窗口
 				teachDiv.style.animation="1s teach-float-left-anim";
-				teachDiv.style.transform="translateX(-100%)";
+				teachDiv.style.transform="translateX(-100vw)";
 			}
 		}
 		//进入时询问是否开启教程
-		setTimeout(function(){
-			if(confirm("是否开启引导教程？")){
-				document.getElementById("select-teach-on").click();
-			}
-		},500);
+		// setTimeout(function(){
+		// 	if(confirm("是否开启引导教程？")){
+		// 		document.getElementById("select-teach-on").click();
+		// 	}
+		// },500);
 		//状态浮动窗口点击动画响应
 		var floatDivExpanded=true;//当前展开状态
 		function onStatusFloatClick(event){ //在窗口被点击时调用
