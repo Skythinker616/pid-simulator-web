@@ -10,6 +10,17 @@
 
 项目基于 [matter.js](https://github.com/liabru/matter-js) 物理引擎实现，仅使用静态页面，无需后端支持，在浏览器中访问`index.html`即可
 
-## 展示页面
+---
 
-[http://skythinker.gitee.io/pid-simulator-web](http://skythinker.gitee.io/pid-simulator-web)
+## 使用方式
+
+### 在线网页
+
+[https://pid-simulator-web.skythinker.top](https://pid-simulator-web.skythinker.top)
+
+*注：该网页当前使用Vercel托管，国内部分地区访问可能较慢*
+
+### 本地运行
+
+1. 下载本项目
+2. 使用浏览器打开`index.html`
