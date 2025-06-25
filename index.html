@@ -258,7 +258,8 @@
 		}
 		/* 教程文字样式 */
 		#teach-info{
-			font-size: medium;
+			font-family: Georgia, serif;
+			font-size: small;
 			margin: 5px;
 		}
 
@@ -316,6 +317,15 @@
 							<div class="hori-flex-div">
 								<input id="select-ctrl-ball" name="mouse-ctrl" type="radio" checked><label for="select-ctrl-ball">推动小球</label>
 								<input id="select-ctrl-target" name="mouse-ctrl" type="radio"><label for="select-ctrl-target">修改目标</label>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td><p class="param-label">复位操作</p></td>
+						<td>
+							<div class="hori-flex-div">
+								<input id="select-reset-ball" name="reset-object" type="radio" onclick="this.checked=false;onResetBallClick();"><label for="select-reset-ball">复位小球</label>
+								<input id="select-reset-target" name="reset-object" type="radio" onclick="this.checked=false;onResetTargetClick();"><label for="select-reset-target">复位目标</label>
 							</div>
 						</td>
 					</tr>
@@ -457,7 +467,8 @@
 		//全局变量定义
 		const ballRadius=20;//小球半径
 		var scrWidth=window.innerWidth;//渲染画布宽度为屏幕高度
-		var scrHeight=window.innerHeight-document.getElementById("settings-div").clientHeight;//渲染画布高度为屏幕高度减去头部配置区域高度
+		var scrHeight=window.innerHeight-document.getElementById("header-div").clientHeight-document.getElementById("settings-div").clientHeight;//渲染画布高度为屏幕高度减去头部配置区域高度
+		var drawHeight=scrHeight/2-document.getElementById("status-float-div").clientHeight/2;
 		var targetPos=scrWidth/2;//目标位置
 		var singlePID=new PID(0,0,0,0,0);//单级PID对象
 		var cascadePID=new CascadePID([0,0,0,0,0],[0,0,0,0,0]);//串级PID对象
@@ -508,7 +519,7 @@
 		World.add(engine.world,mouseConstraint);
 
 		//创建小球刚体
-		var ball=Bodies.circle(scrWidth/2,scrHeight/2,ballRadius,{
+		var ball=Bodies.circle(scrWidth/2,drawHeight,ballRadius,{
 			friction:0, //阻力为0
 			frictionAir:0,
 			restitution:0, //碰撞不反弹
@@ -538,13 +549,27 @@
 		}
 		//在渲染器完成渲染后进行自定义绘制，否则会被覆盖
 		Events.on(render,"afterRender",function(event){
-			renderDrawLine(0,scrHeight/2,scrWidth,scrHeight/2,1,"gray",true);//坐标轴线
-			renderDrawLine(ball.position.x,scrHeight/2,ball.position.x+pidForce.x*3,scrHeight/2,5,"#388AF5",false);//PID施力线
-			renderDrawLine(targetPos,scrHeight/2-ballRadius/2,targetPos,scrHeight/2+ballRadius/2,3,"#00E06D",false);//目标位置线
+			renderDrawLine(0,drawHeight,scrWidth,drawHeight,1,"gray",true);//坐标轴线
+			renderDrawLine(ball.position.x,drawHeight,ball.position.x+pidForce.x*3,drawHeight,5,"#388AF5",false);//PID施力线
+			renderDrawLine(targetPos,drawHeight-ballRadius/2,targetPos,drawHeight+ballRadius/2,3,"#00E06D",false);//目标位置线
 		});
 
+		//PID计算更新函数
+		function pidUpdate() {
+			if(isSinglePID){ //单级PID计算
+				singlePID.calc(targetPos,ball.position.x);
+				pidForce.x=singlePID.output;
+			}else{ //串级PID计算
+				cascadePID.calc(targetPos,ball.position.x,ball.velocity.x);
+				pidForce.x=cascadePID.output;
+			}
+			histSamples.push({target:targetPos,ball:ball.position.x});//将当前状态入队
+			if(histSamples.length>histQueueLength)//保持队列不超过指定长度
+				histSamples.shift();
+		}
 		//在引擎更新计算前对小球施加力（每次更新后受力会清零）
 		Events.on(engine,"beforeUpdate",function(event){
+			pidUpdate();//更新PID
 			Body.applyForce(ball,{x:0,y:0},staticForce);
 			Body.applyForce(ball,{x:0,y:0},pidForce);
 		});
@@ -573,20 +598,6 @@
 			isRenderMouseDown=false;
 		});
 
-		//PID定时运算
-		setInterval(function(event){
-			if(isSinglePID){ //单级PID计算
-				singlePID.calc(targetPos,ball.position.x);
-				pidForce.x=singlePID.output;
-			}else{ //串级PID计算
-				cascadePID.calc(targetPos,ball.position.x,ball.velocity.x);
-				pidForce.x=cascadePID.output;
-			}
-			histSamples.push({target:targetPos,ball:ball.position.x});//将当前状态入队
-			if(histSamples.length>histQueueLength)//保持队列不超过指定长度
-				histSamples.shift();
-		},20);//每20ms计算一次
-
 	</script>
 	<!-- 界面元素响应 -->
 	<script type="text/javascript">
@@ -595,6 +606,15 @@
 			var valueElement=document.getElementById(event.srcElement.id.replace("range","number"));//根据id找出对应的数字编辑框
 			valueElement.value=event.srcElement.value;//设置编辑框的值
 			valueElement.onchange();//触发编辑框改变事件
+		}
+		//鼠标点击复位小球
+		function onResetBallClick(){
+			Body.setPosition(ball,{x:scrWidth/2,y:drawHeight});
+			Body.setVelocity(ball,{x:0,y:0});
+		}
+		//鼠标点击复位目标
+		function onResetTargetClick(){
+			targetPos=scrWidth/2;
 		}
 		//PID类型切换
 		function onPIDTypeChange(isSingle){
@@ -609,7 +629,14 @@
 				singlePID.clear();
 			}
 		}
+		function updateDrawHeight(){ //更新绘图高度
+			var teachDivHeight=teachDivExpanded? document.getElementById("teach-div").clientHeight : 0; //教程窗口高度
+			var floatDivHeight=document.getElementById("status-float-div").clientHeight*(floatDivExpanded? 1 : 0.2); //状态窗口高度
+			drawHeight=(scrHeight-teachDivHeight-floatDivHeight)/2 + teachDivHeight; //根据教程和状态窗口高度计算绘图高度
+			Body.setPosition(ball,{x:ball.position.x,y:drawHeight});//重置小球位置
+		}
 		//教程模式切换
+		var teachDivExpanded=false;//当前教程窗口展开状态
 		function onTeachSwitch(switchon){
 			var teachDiv=document.getElementById("teach-div");//获取窗口div
 			if(switchon){ //展开窗口
@@ -619,6 +646,10 @@
 				teachDiv.style.animation="1s teach-float-left-anim";
 				teachDiv.style.transform="translateX(-100vw)";
 			}
+			teachDivExpanded=switchon;
+			setTimeout(() => {
+				updateDrawHeight();//更新绘图高度
+			}, switchon? 0 : 600);
 		}
 		//进入时询问是否开启教程
 		setTimeout(function(){
@@ -639,6 +670,9 @@
 				floatDiv.style.transform="translateY(0)";
 				floatDivExpanded=true;
 			}
+			setTimeout(() => {
+				updateDrawHeight();//更新绘图高度
+			}, 500);
 		}
 	</script>
 	<!-- 教程窗口更新 -->
